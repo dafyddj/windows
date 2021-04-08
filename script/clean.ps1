@@ -32,15 +32,36 @@ $cleanup_types = `
 "Windows ESD installation files",`
 "Windows Upgrade Log Files"
 
+
+$cleanup_dirs = @(
+    "C:\\Recovery"
+    "$env:localappdata\\Nuget"
+    "$env:localappdata\\temp\\*"
+    "$env:windir\\logs"
+    "$env:windir\\winsxs\\manifestcache"
+)
+
 $regKey = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches"
 $state = "StateFlags0100"
 
-foreach ($cleanup in $cleanup_types) {
+if ([Environment]::OSVersion.Version -le (New-Object "Version" 10,0)) {
+  foreach ($cleanup in $cleanup_types) {
     New-ItemProperty -Path "$regKey\$cleanup" -Name $state -Value 2 -PropertyType DWord -Force | Out-Null
-}
-
-if (Test-Path "$env:SystemRoot\SYSTEM32\cleanmgr.exe") {
-  Start-Process -Wait cleanmgr -ArgumentList "/sagerun:100"
+  }
+  if (Test-Path "$env:SystemRoot\SYSTEM32\cleanmgr.exe") {
+    Start-Process -Wait cleanmgr -ArgumentList "/sagerun:100"
+  }
+} else {
+  $cleanup_dirs | % {
+    if(Test-Path $_) {
+      Write-Host "Removing $_"
+      try {
+        Takeown /d Y /R /f $_
+        Icacls $_ /GRANT:r administrators:F /T /c /q  2>&1 | Out-Null
+        Remove-Item $_ -Recurse -Force | Out-Null
+      } catch { $global:error.RemoveAt(0) }
+    }
+  }
 }
 
 Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
