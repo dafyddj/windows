@@ -1,0 +1,7 @@
+cpus = "2"
+guest_os_type = "Windows10_64"
+iso_checksum = "BD9E41BDF9E23DCF5A0592F3BFE794584C80F1415727ED234E8929F656221836"
+iso_url = "iso/Win10_20H2_v2_EnglishInternational_x64.iso"
+memory = "2048"
+version = "0.1.1"
+vm_name = "win10x64-pro"
